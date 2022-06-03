@@ -1,5 +1,8 @@
+from typing import Callable
 import numpy as np
+import numpy.typing as npt
 import sympy as sp
+import matplotlib.pyplot as plt
 
 
 # https://www.koreascience.or.kr/article/CFKO200333239336988.pdf
@@ -8,13 +11,13 @@ class InvertedPendulum:
 
     def __init__(
         self,
-        length,
-        pendulum_mass,
-        cart_mass,
-        friction_coeff_cart_ground,
-        pendulum_inertia,
-        initial_state,
-        control_law,
+        length: float,
+        pendulum_mass: float,
+        cart_mass: float,
+        friction_coeff_cart_ground: float,
+        pendulum_inertia: float,
+        initial_state: npt.NDArray,
+        control_law: Callable[[np.array], float],
     ) -> None:
         self.pole_length = length
         self.pendulum_mass = pendulum_mass
@@ -87,16 +90,10 @@ class InvertedPendulum:
 
     def integrate_dynamics_from_state(self, state, timestep):
         # simple RK4 integration
-        # print(state)
-
         k1 = self.dynamics_continuous(state)
-        # print("k1\n", k1)
         k2 = self.dynamics_continuous(state + timestep * k1 / 2)
-        # print("k2\n", k2)
         k3 = self.dynamics_continuous(state + timestep * k2 / 2)
-        # print("k3\n", k3)
         k4 = self.dynamics_continuous(state + timestep * k3)
-        # print("k4\n", k4)
 
         new_state = state + timestep * (k1 + 2 * k2 + 2 * k3 + k4) / 6
 
@@ -105,3 +102,40 @@ class InvertedPendulum:
     def integrate_dynamics(self, timestep):
         self.state = self.integrate_dynamics_from_state(self.state, timestep)
         return self.state
+
+    def simulate_system(self, initial_state, timespan, delta_t):
+        
+        iterations = int(timespan/delta_t)
+        state_list = np.zeros((iterations, 4))
+        t = np.zeros(iterations)
+        
+
+        self.set_state(initial_state)
+
+        for i in range(iterations):
+            t[i] = i * delta_t
+            state_list[i, :] = self.integrate_dynamics(delta_t)
+
+        return (state_list, t)
+
+    @staticmethod
+    def plot_state_evolution(state_evolution, t):
+        fig, axs = plt.subplots(2, 2, constrained_layout=True)
+        axs[0, 0].plot(t, state_evolution[:, 0])
+        axs[0, 0].set_title("x1")
+        axs[0, 1].plot(t, state_evolution[:, 1], "tab:orange")
+        axs[0, 1].set_title("x2")
+        axs[1, 0].plot(t, state_evolution[:, 2], "tab:green")
+        axs[1, 0].set_title("x3")
+        axs[1, 1].plot(t, state_evolution[:, 3], "tab:red")
+        axs[1, 1].set_title("x4")
+
+        plt.plot()
+
+    def plot_actuator_commands(self, state_evolution, t):
+        actuator_commands = np.zeros(t.shape)
+        for i in range(actuator_commands.shape[0]):
+            actuator_commands[i] =  self.control_law(state_evolution[i,:])
+
+        plt.plot(t, actuator_commands)
+        plt.title("u")
