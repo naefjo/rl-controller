@@ -106,7 +106,7 @@ class InvertedPendulum:
     def simulate_system(self, initial_state, timespan, delta_t):
         
         iterations = int(timespan/delta_t)
-        state_list = np.zeros((iterations, 4))
+        state_list = np.zeros((4, iterations))
         t = np.zeros(iterations)
         
 
@@ -114,28 +114,21 @@ class InvertedPendulum:
 
         for i in range(iterations):
             t[i] = i * delta_t
-            state_list[i, :] = self.integrate_dynamics(delta_t)
+            state_list[:,i] = self.integrate_dynamics(delta_t)
 
         return (state_list, t)
 
-    @staticmethod
-    def plot_state_evolution(state_evolution, t):
-        fig, axs = plt.subplots(2, 2, constrained_layout=True)
-        axs[0, 0].plot(t, state_evolution[:, 0])
+    def plot_state_evolution(self, state_evolution, t):
+        fig, axs = plt.subplots(2, 3, constrained_layout=True, figsize=(15,7.5))
+        axs[0, 0].plot(t, state_evolution[0,:])
         axs[0, 0].set_title("x1")
-        axs[0, 1].plot(t, state_evolution[:, 1], "tab:orange")
+        axs[0, 1].plot(t, state_evolution[1,:], "tab:orange")
         axs[0, 1].set_title("x2")
-        axs[1, 0].plot(t, state_evolution[:, 2], "tab:green")
+        axs[1, 0].plot(t, state_evolution[2,:], "tab:green")
         axs[1, 0].set_title("x3")
-        axs[1, 1].plot(t, state_evolution[:, 3], "tab:red")
+        axs[1, 1].plot(t, state_evolution[3,:], "tab:red")
         axs[1, 1].set_title("x4")
-
+        axs[0,2].plot(t, self.control_law(state_evolution), "tab:purple")
+        axs[0,2].set_title("u")
+        
         plt.plot()
-
-    def plot_actuator_commands(self, state_evolution, t):
-        actuator_commands = np.zeros(t.shape)
-        for i in range(actuator_commands.shape[0]):
-            actuator_commands[i] =  self.control_law(state_evolution[i,:])
-
-        plt.plot(t, actuator_commands)
-        plt.title("u")
