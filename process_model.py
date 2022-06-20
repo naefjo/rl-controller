@@ -1,3 +1,8 @@
+"""
+This module implements an inverted pendulum process model
+and means to simulate it.
+"""
+
 from typing import Any, Callable
 import numpy as np
 import sympy as sp
@@ -6,6 +11,7 @@ import matplotlib.pyplot as plt
 
 # https://www.koreascience.or.kr/article/CFKO200333239336988.pdf
 class InvertedPendulum:
+    """The InvertedPendulum class"""
     gravity = 9.81
 
     def __init__(
@@ -111,6 +117,8 @@ class PlantSimulator:
         self.plant = plant
 
     def _integrate_dynamics_from_state(self, state: np.ndarray):
+        """RK4 integration of the system from a state for one timestep"""
+        
         # TODO:check correctness of implementation.
         k = np.zeros((5,state.shape[1]))
         for i in range(4):
@@ -138,6 +146,7 @@ class PlantSimulator:
         return new_state
 
     def simulate_system(self, initial_state):
+        """Simulate the system from initial condition for a given timespan and resolution"""
         state_list = np.zeros(
             (self.iterations+1, self.plant.__annotations__.get('x').shape[1])
         )
@@ -159,24 +168,22 @@ class PlantSimulator:
 
         return (state_list, actuator_list, t)
 
-    @staticmethod
-    def plot_state_evolution(state_evolution, t):
-        fig, axs = plt.subplots(2, 2, constrained_layout=True)
-        axs[0, 0].plot(t, state_evolution[:, 0])
+    def plot_state_evolution(self, state_evolution, timesteps):
+        """Plot state evolution of the system for a given state evolution"""
+        fig, axs = plt.subplots(2, 3, constrained_layout=True, figsize=(15,7.5))
+        axs[0, 0].plot(timesteps, state_evolution[0,:])
         axs[0, 0].set_title("x1")
-        axs[0, 1].plot(t, state_evolution[:, 1], "tab:orange")
+        axs[0, 1].plot(timesteps, state_evolution[1,:], "tab:orange")
         axs[0, 1].set_title("x2")
-        axs[1, 0].plot(t, state_evolution[:, 2], "tab:green")
+        axs[1, 0].plot(timesteps, state_evolution[2,:], "tab:green")
         axs[1, 0].set_title("x3")
-        axs[1, 1].plot(t, state_evolution[:, 3], "tab:red")
+        axs[1, 1].plot(timesteps, state_evolution[3,:], "tab:red")
         axs[1, 1].set_title("x4")
+        axs[0,2].plot(
+            timesteps,
+            [self.control_law(state_evolution[:,i]) for i in range(len(timesteps))],
+            "tab:purple"
+        )
+        axs[0,2].set_title("u")
 
         plt.plot()
-
-    def plot_actuator_commands(self, state_evolution, t):
-        actuator_commands = np.zeros(t.shape)
-        for i in range(actuator_commands.shape[0]):
-            actuator_commands[i] =  self.control_law(state_evolution[i,:])
-
-        plt.plot(t, actuator_commands)
-        plt.title("u")
